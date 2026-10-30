@@ -5,6 +5,16 @@ Every change to this recipe, newest first. Each release names the image it serve
 
 ## Unreleased
 
+- **Engine migration to TensorFold 1.1.8 planned, pin deliberately unchanged** (`docs/MIGRATION-1.1.8.md`):
+  1.1.8 is a native binary (the Python engine froze at 0.6.6), so none of the 123 `patch -p0` diffs in `patches/`
+  apply to it, the native CUDA build refuses `--tp`/`--rank`, and 46 of the 53 `TF_GLM_*`/`TENSORFOLD_*` names this
+  recipe sets have no 1.1.8 counterpart. `TF_VERSION` stays `v0.6.0` until the staged migration's hardware spike
+  passes. 1.1.8 does ship `--dashboard` (the local `/dashboard` page and `/stats` snapshot on the API port), which
+  0.6.0 has no equivalent for (`tensorfold: error: unrecognized arguments: --dashboard`).
+- **Prompt/reply window set to the engine maximum** (`.env.spark.example`, `CONTEXT=1048576`): the profile's derived
+  default was 163,840 for `VISION=1` + BF16 KV + non-q4 dense weights, which refused a 166,219-token request while
+  the pool afforded 1M. Served: `context_length 1040368` (the shard part limit), `pool_tokens 2080768`, startup
+  estimate 97.03 GiB within 99.66 GiB, no refit-down; kept prompt states 32 → 19 as the pool shrinks.
 - **A request held for room no longer re-reads its stored prompt every round** (patch `0088-glm-spill-tier`, PR #210
   by [nanashi66](https://github.com/nanashi66)): `GlmScheduler._admit` forgot a request's "its stored prompt was looked
   for" mark before `admit`, so a request `NoRoom` held started the NVMe read of its state again in every retry round
