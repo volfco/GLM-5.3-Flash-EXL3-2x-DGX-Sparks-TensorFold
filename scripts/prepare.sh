@@ -235,8 +235,9 @@ download() {  # <repo id> <revision or empty>
     hf download "$1" ${2:+--revision "$2"} --cache-dir "$HF_CACHE/hub" >/dev/null
   else
     # Keep downloads owned by the host user, in the same HF_CACHE/hub layout as the host CLI.
+    # An existing shared HF_HOME/xet may belong to another user; keep Xet scratch writable in the container.
     docker run --rm --user "$(id -u):$(id -g)" --network host --entrypoint python ${HF_TOKEN:+-e HF_TOKEN} \
-      -v "$HF_CACHE":/hf -e HF_HOME=/hf -e HOME=/tmp "$IMAGE" -c \
+      -v "$HF_CACHE":/hf -e HF_HOME=/hf -e HF_XET_CACHE=/tmp/hf-xet -e HOME=/tmp "$IMAGE" -c \
       'import sys; from huggingface_hub import snapshot_download; snapshot_download(sys.argv[1], revision=sys.argv[2] or None)' "$1" "$2"
   fi
 }
